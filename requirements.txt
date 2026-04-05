@@ -1,0 +1,5 @@
+# pip install -r requirements.txt
+# Gemini API client (installs google-api-core, requests, etc. transitively).
+google-generativeai>=0.8.0
+# DuckDuckGo search for web_search tool (DDGS).
+ddgs>=9.0.0

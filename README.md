@@ -1,29 +1,86 @@
-# Roushath- Frontend Dev-ReAct Agent - Minimal Python ReAct Agent
+# # Roushath- Frontend Dev-ReAct Agent - Minimal Python ReAct Agent
 
-A lightweight, purely Python-based AI agent built using the **ReAct (Reasoning and Acting)** framework. This project demonstrates how Large Language Models (LLMs) can be prompted to logically reason step-by-step and dynamically interact with external tools to solve multi-part problems.
+This repository is documented around a single module: **`src/minimal_react_agent.py`**.
 
-Built using the **Google Gemini API** (`google-generativeai`).
+It implements a **ReAct** loop with **Gemini**: the model writes **Thought → Action → Action Input**, Python runs a **tool** and feeds back **Observation**, until the model outputs **Final Answer**. Works **locally** or in **Google Colab**.
 
-## 🌟 Overview
+---
 
-The agent is given a complex query and access to specific restricted tools. Instead of hallucinating an answer, it undergoes a thought cycle:
-1. **Thought:** Determines what missing information it needs.
-2. **Action:** Selects an appropriate tool.
-3. **Action Input:** Passes parameters to the tool.
-4. **Observation:** Receives real data back from the tool system.
-5. *Repeats until it has enough information to formulate a Final Answer.*
+## What you need (`requirements.txt`)
 
-## 🛠️ Tools Included
-For this demonstration, the agent has access to two mock tools:
-- `get_stock_price(ticker)`: Retrieves the live price of a stock (e.g., AAPL, TSLA).
-- `calculator(expression)`: Safely evaluates standard mathematical expressions.
+```bash
+pip install -r requirements.txt
+```
 
-## 🚀 Quick Start (Google Colab / Local run)
+| Package | Role |
+|--------|------|
+| **google-generativeai** | Gemini API (`generate_content`), with a stop sequence so the model does not write its own `Observation`. |
+| **ddgs** | DuckDuckGo search (`DDGS`) for the **web_search** tool. |
 
-1. Clone this repository or copy the script into a Google Colab notebook environment.
-2. Install the necessary Gemini SDK:
-   ```bash
-   pip install -q google-generativeai
+Upgrading on Colab if the client misbehaves:
 
+```text
+pip install -q -U google-generativeai google-api-core ddgs
+```
 
+---
 
+## Tools (in `src/minimal_react_agent.py`)
+
+| Tool | Role |
+|------|------|
+| **web_search** | DuckDuckGo text results (title, snippet, URL). |
+| **calculator** | Safe math via `ast` (not `eval`): `+ - * / % **` on numeric expressions. |
+
+---
+
+## How to run
+
+### Local
+
+From the **repository root** (the folder that contains `src/`):
+
+```bash
+pip install -r requirements.txt
+```
+
+Set **`GEMINI_API_KEY`** (PowerShell: `$env:GEMINI_API_KEY = "your-key"`, bash: `export GEMINI_API_KEY=your-key`).
+
+Optional: **`GEMINI_MODEL`** (default in code is `gemini-2.5-flash`).
+
+**Option A — run the file**
+
+```bash
+python src/minimal_react_agent.py
+```
+
+**Option B — import**
+
+```bash
+python -c "from src.minimal_react_agent import react; react('What is 17 * 23? Use the calculator.')"
+```
+
+### Google Colab
+
+1. Enable internet on the runtime.
+2. Install: `!pip install -q -U google-generativeai ddgs` *(or `!pip install -r requirements.txt` if you uploaded the whole repo)*.
+3. Add Colab **Secret** **`GEMINI_API_KEY`** and allow this notebook to use it (or set `os.environ["GEMINI_API_KEY"]`).
+4. Upload `src/minimal_react_agent.py` to Colab **or** paste its full contents into a code cell and run it.
+5. In a new cell, call **`react("your question")`**.  
+   The `if __name__ == "__main__":` block does **not** run when code lives in a notebook cell, so you must call **`react(...)`** yourself.
+
+---
+
+## Observations (what to expect)
+
+- **Steps**: Each loop prints `--- Step N ---` and the model’s text; after a tool runs you see **`[System] Observation:`** (long text may be clipped when printed).
+- **RESULT / SUMMARY**: When the model emits **Final Answer:**, the script prints a **RESULT** block and a short **SUMMARY** of earlier steps and observations.
+- **Model id**: Default **`gemini-2.5-flash`**. Older names can **404**; override with **`GEMINI_MODEL`** if your project uses another id.
+- **Network blips** (e.g. Colab): **`ask_model`** retries transient failures and uses a longer **timeout**.
+- **Keys**: Keep **`GEMINI_API_KEY_INLINE`** empty in shared repos; use Secrets or env vars instead.
+
+---
+
+## API key (quick reference)
+
+Use one of: Colab **Secret** `GEMINI_API_KEY`, **`os.environ["GEMINI_API_KEY"]`**, **`GEMINI_API_KEY_INLINE`** in the script (local only, do not commit), or the interactive paste path when **`setup()`** runs on Colab.
